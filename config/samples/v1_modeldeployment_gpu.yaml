@@ -1,0 +1,13 @@
+apiVersion: kaimera.ai/v1
+kind: ModelDeployment
+metadata:
+  labels:
+    app.kubernetes.io/name: kaimera
+    app.kubernetes.io/managed-by: kustomize
+  name: modeldeployment-gpu
+spec:
+  modelName: microsoft/Phi-3-mini-128k-instruct
+  runtime: "gpu"
+  nodeSelectorLabels:
+    "cloud.google.com/gke-nodepool": gpu-pool
+  replicas: 1

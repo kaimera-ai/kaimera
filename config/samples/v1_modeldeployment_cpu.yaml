@@ -1,0 +1,12 @@
+apiVersion: kaimera.ai/v1
+kind: ModelDeployment
+metadata:
+  labels:
+    app.kubernetes.io/name: kaimera
+    app.kubernetes.io/managed-by: kustomize
+  name: modeldeployment-cpu
+spec:
+  modelName: TinyLlama/TinyLlama-1.1B-intermediate-step-1431k-3T
+  nodeSelectorLabels:
+    "cloud.google.com/gke-nodepool": high-cpu
+  replicas: 1

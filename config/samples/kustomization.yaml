@@ -1,0 +1,5 @@
+## Append samples of your project ##
+resources:
+- v1_modeldeployment_cpu.yaml
+- v1_modeldeployment_gpu.yaml
+# +kubebuilder:scaffold:manifestskustomizesamples

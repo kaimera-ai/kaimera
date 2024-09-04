@@ -14,6 +14,7 @@ type ModelDeploymentSpec struct {
 	Replicas           int32             `json:"replicas,omitempty"`
 	Runtime            string            `json:"runtime,omitempty"`
 	MaxModelLength     int32             `json:"maxModelLength,omitempty"`
+	Provider           string            `json:"provider,omitempty"`
 }
 
 // ModelDeploymentStatus defines the observed state of ModelDeployment

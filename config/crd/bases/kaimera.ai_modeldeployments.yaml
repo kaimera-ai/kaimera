@@ -48,6 +48,8 @@ spec:
                 additionalProperties:
                   type: string
                 type: object
+              provider:
+                type: string
               replicas:
                 format: int32
                 type: integer

@@ -2,11 +2,9 @@ package controller
 
 import (
 	"context"
-	"fmt"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -107,89 +105,6 @@ func (r *ModelDeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&kaimeraaiv1.ModelDeployment{}).
 		Complete(r)
-}
-
-func (r *ModelDeploymentReconciler) generateDeployment(md *kaimeraaiv1.ModelDeployment) (*appsv1.Deployment, error) {
-
-	if md.Spec.Replicas == 0 {
-		md.Spec.Replicas = 1
-	}
-
-	var image string
-	maxModelLength := 512
-	if md.Spec.MaxModelLength > 0 {
-		maxModelLength = int(md.Spec.MaxModelLength)
-	}
-	var tolerations []corev1.Toleration
-	var limits corev1.ResourceList
-	if md.Spec.Runtime == "" || md.Spec.Runtime == "cpu" {
-		image = "patnaikshekhar/vllm-cpu:1"
-	} else if md.Spec.Runtime == "gpu" {
-		image = "vllm/vllm-openai:latest"
-		tolerations = []corev1.Toleration{
-			{
-				Key:      "nvidia.com/gpu",
-				Operator: "Exists",
-				Effect:   "NoSchedule",
-			},
-		}
-
-		limits = corev1.ResourceList{
-			"nvidia.com/gpu": resource.MustParse("1"),
-		}
-
-	}
-	deploy := &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      md.Name,
-			Namespace: md.Namespace,
-		},
-		Spec: appsv1.DeploymentSpec{
-			Replicas: &md.Spec.Replicas,
-			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"app": md.Name,
-				},
-			},
-			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"app": md.Name,
-					},
-				},
-				Spec: corev1.PodSpec{
-					NodeSelector: md.Spec.NodeSelectorLabels,
-					Containers: []corev1.Container{
-						{
-							Name:            "app",
-							Image:           image,
-							ImagePullPolicy: "IfNotPresent",
-							Command: []string{
-								"vllm",
-								"serve",
-								"--dtype",
-								"auto",
-								"--max-model-len",
-								fmt.Sprintf("%d", maxModelLength),
-								md.Spec.ModelName,
-							},
-							Resources: corev1.ResourceRequirements{
-								Limits: limits,
-							},
-						},
-					},
-					Tolerations: tolerations,
-				},
-			},
-		},
-	}
-
-	err := ctrl.SetControllerReference(md, deploy, r.Scheme)
-	if err != nil {
-		return nil, err
-	}
-
-	return deploy, nil
 }
 
 func (r *ModelDeploymentReconciler) generateService(md *kaimeraaiv1.ModelDeployment) (*corev1.Service, error) {

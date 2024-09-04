@@ -1,6 +1,6 @@
 # Kaimera
 
-
+Makes deploying AI models to Kubernetes easy. Consists of a controller and a proxy to enable you to deploy AI models using vLLM on different runtimes such as GPU, CPU, etc.
 
 ## Description
 // TODO(user): An in-depth paragraph about your project and overview of use

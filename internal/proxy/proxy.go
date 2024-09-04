@@ -1,28 +1,48 @@
 package proxy
 
 import (
+	"crypto/rsa"
 	"fmt"
 	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
 	"strings"
 
 	"github.com/go-logr/logr"
+	"github.com/golang-jwt/jwt/v5"
 	kaimera "github.com/kaimera-ai/kaimera/api/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type ProxyServer struct {
-	client client.Client
-	logger logr.Logger
+	client           client.Client
+	logger           logr.Logger
+	verificationCert *rsa.PublicKey
 }
 
-func New(client client.Client, logger logr.Logger) *ProxyServer {
-	return &ProxyServer{
-		client: client,
-		logger: logger,
+func New(client client.Client, logger logr.Logger, verificationCert string) (*ProxyServer, error) {
+
+	var publicKey *rsa.PublicKey
+
+	if verificationCert != "" {
+		verificationCertContents, err := os.ReadFile(verificationCert)
+		if err != nil {
+			return nil, err
+		}
+
+		publicKey, err = jwt.ParseRSAPublicKeyFromPEM(verificationCertContents)
+		if err != nil {
+			return nil, err
+		}
 	}
+
+	return &ProxyServer{
+		client:           client,
+		logger:           logger,
+		verificationCert: publicKey,
+	}, nil
 }
 
 func (server *ProxyServer) Start(address string) error {
@@ -37,6 +57,11 @@ func (server *ProxyServer) Start(address string) error {
 }
 
 func (server *ProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	err := server.validateKey(r)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
 	path := r.URL.Path
 	log.Printf("Path invoked is %s", path)
 	// Parse path; path format should be /[your-namespace]/[your-modeldeploymentname]/api/v1/chat...
@@ -51,7 +76,7 @@ func (server *ProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	modelDeploymentName := modelDeploymentStringParts[2]
 
 	// Find the corresponding CRD and match with its name
-	err := server.client.Get(r.Context(),
+	err = server.client.Get(r.Context(),
 		client.ObjectKey{Namespace: namespace, Name: modelDeploymentName},
 		&kaimera.ModelDeployment{})
 

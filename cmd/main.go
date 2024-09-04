@@ -43,6 +43,7 @@ func init() {
 
 func main() {
 	var metricsAddr string
+	var verificationCert string
 	var enableLeaderElection bool
 	var probeAddr string
 	var secureMetrics bool
@@ -58,6 +59,7 @@ func main() {
 		"If set, the metrics endpoint is served securely via HTTPS. Use --metrics-secure=false to use HTTP instead.")
 	flag.BoolVar(&enableHTTP2, "enable-http2", false,
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
+	flag.StringVar(&verificationCert, "cert", "", "Path to the public cert used to verify the the JsonWebToken in the request")
 	opts := zap.Options{
 		Development: true,
 	}
@@ -165,8 +167,11 @@ func main() {
 
 	eg.Go(func() error {
 		setupLog.Info("starting proxy server")
-		svr := proxy.New(mgr.GetClient(), proxyLog)
-		err := svr.Start(":9999")
+		svr, err := proxy.New(mgr.GetClient(), proxyLog, verificationCert)
+		if err != nil {
+			return err
+		}
+		err = svr.Start(":9999")
 		if err != nil {
 			return err
 		}

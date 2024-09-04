@@ -2,4 +2,5 @@
 resources:
 - v1_modeldeployment_cpu.yaml
 - v1_modeldeployment_gpu.yaml
+- v1_modeldeployment_ollama.yaml
 # +kubebuilder:scaffold:manifestskustomizesamples

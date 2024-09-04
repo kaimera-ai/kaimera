@@ -1,0 +1,14 @@
+apiVersion: kaimera.ai/v1
+kind: ModelDeployment
+metadata:
+  labels:
+    app.kubernetes.io/name: kaimera
+    app.kubernetes.io/managed-by: kustomize
+  name: modeldeployment-ollama
+spec:
+  provider: Ollama
+  runtime: cpu
+  modelName: phi3
+  nodeSelectorLabels:
+    "cloud.google.com/gke-nodepool": high-cpu
+  replicas: 1
